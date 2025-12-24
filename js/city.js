@@ -1,6 +1,4 @@
-/* ============================
-   GLOBAL STATE
-============================ */
+
 
 let tripCities = [];
 let tripData = {};
@@ -8,9 +6,7 @@ let cachedRows = [];
 let visibleCount = 6;
 const LOAD_STEP = 6;
 
-/* ============================
-   FIELD CONFIG
-============================ */
+
 
 const tripFields = {
   region: { label: "Region", compare: false },
@@ -44,14 +40,12 @@ const tripFields = {
   best_months: { label: "Best Months", compare: false }
 };
 
-/* ============================
-   DATA LOADING
-============================ */
+
 
 async function loadTripData() {
   const [cityRes, dataRes] = await Promise.all([
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.1/cities/citylists.json"),
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.1/cities/city-data.json")
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.2/cities/citylists.json"),
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.2/cities/city-data.json")
   ]);
 
   const cityJson = await cityRes.json();
@@ -61,25 +55,22 @@ async function loadTripData() {
   tripData = dataJson.cities || {};
 }
 
-/* ============================
-   AUTOCOMPLETE
-============================ */
 
-function setupLivingAutocomplete(inputId, listId) {
+
+function setupAutocomplete(inputId, listId) {
   const input = document.getElementById(inputId);
   const list = document.getElementById(listId);
-
   if (!input || !list) return;
 
   input.addEventListener("input", () => {
     const value = input.value.trim().toLowerCase();
     list.innerHTML = "";
     list.style.display = "none";
-    input.dataset.cityId = "";
+    input.dataset.id = "";
 
     if (!value) return;
 
-    const matches = livingCities.filter(c =>
+    const matches = tripCities.filter(c =>
       c.name.toLowerCase().includes(value)
     );
 
@@ -92,7 +83,7 @@ function setupLivingAutocomplete(inputId, listId) {
 
       item.onclick = () => {
         input.value = city.name;
-        input.dataset.cityId = city.id;
+        input.dataset.id = city.id;
         list.innerHTML = "";
         list.style.display = "none";
       };
@@ -112,7 +103,7 @@ function setupLivingAutocomplete(inputId, listId) {
 }
 
 /* ============================
-   COMPARISON LOGIC
+   COMPARE LOGIC
 ============================ */
 
 function compareTrips() {
@@ -165,6 +156,7 @@ function compareTrips() {
       <div class="${winner === "A" ? "winner" : ""}">${formatRange(valA, field)}</div>
       <div class="${winner === "B" ? "winner" : ""}">${formatRange(valB, field)}</div>
     `;
+
     cachedRows.push(row);
   });
 
@@ -187,6 +179,7 @@ function compareTrips() {
 
 function renderRows(results) {
   results.querySelectorAll(".trip-row, .load-more-btn").forEach(e => e.remove());
+
   cachedRows.slice(0, visibleCount).forEach(row => results.appendChild(row));
 
   if (visibleCount < cachedRows.length) {
@@ -208,12 +201,10 @@ function renderRows(results) {
 function normalizeScore(a, b, better) {
   if (a == null || b == null) return [0, 0];
   if (a === b) return [1, 1];
-
   if (better === "higher") {
     const max = Math.max(a, b);
     return [a / max, b / max];
   }
-
   const min = Math.min(a, b);
   return [min / a, min / b];
 }
@@ -242,6 +233,11 @@ function formatRange(value, field) {
 
   return value;
 }
+
+/* ============================
+   URL SHARE SUPPORT
+============================ */
+
 function applyCompareFromURL() {
   const params = new URLSearchParams(window.location.search);
   const a = params.get("a");
@@ -251,7 +247,6 @@ function applyCompareFromURL() {
 
   const cityA = tripCities.find(c => c.id === a);
   const cityB = tripCities.find(c => c.id === b);
-
   if (!cityA || !cityB) return;
 
   const inputA = document.getElementById("tripA");
@@ -259,7 +254,6 @@ function applyCompareFromURL() {
 
   inputA.value = cityA.name;
   inputA.dataset.id = cityA.id;
-
   inputB.value = cityB.name;
   inputB.dataset.id = cityB.id;
 
@@ -270,11 +264,10 @@ function applyCompareFromURL() {
    INIT
 ============================ */
 
-
 document.addEventListener("DOMContentLoaded", async () => {
   await loadTripData();
   setupAutocomplete("tripA", "tripAList");
   setupAutocomplete("tripB", "tripBList");
   document.getElementById("compareTripBtn")?.addEventListener("click", compareTrips);
-  applyCompareFromURL(); 
+  applyCompareFromURL();
 });
