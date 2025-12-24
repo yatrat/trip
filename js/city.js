@@ -50,8 +50,8 @@ const tripFields = {
 
 async function loadTripData() {
   const [cityRes, dataRes] = await Promise.all([
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip/cities@v1/citylists.json"),
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip/cities@v1/city-data.json")
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2/cities/citylists.json"),
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2/cities/city-data.json")
   ]);
 
   const cityJson = await cityRes.json();
