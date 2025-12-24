@@ -50,8 +50,8 @@ const tripFields = {
 
 async function loadTripData() {
   const [cityRes, dataRes] = await Promise.all([
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2/cities/citylists.json"),
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2/cities/city-data.json")
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.1/cities/citylists.json"),
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.1/cities/city-data.json")
   ]);
 
   const cityJson = await cityRes.json();
@@ -65,7 +65,7 @@ async function loadTripData() {
    AUTOCOMPLETE
 ============================ */
 
-function setupAutocomplete(inputId, listId) {
+function setupLivingAutocomplete(inputId, listId) {
   const input = document.getElementById(inputId);
   const list = document.getElementById(listId);
 
@@ -75,11 +75,11 @@ function setupAutocomplete(inputId, listId) {
     const value = input.value.trim().toLowerCase();
     list.innerHTML = "";
     list.style.display = "none";
-    input.dataset.id = "";
+    input.dataset.cityId = "";
 
     if (!value) return;
 
-    const matches = tripCities.filter(c =>
+    const matches = livingCities.filter(c =>
       c.name.toLowerCase().includes(value)
     );
 
@@ -89,12 +89,14 @@ function setupAutocomplete(inputId, listId) {
       const item = document.createElement("div");
       item.className = "yt-suggestion";
       item.textContent = city.name;
+
       item.onclick = () => {
         input.value = city.name;
-        input.dataset.id = city.id;
+        input.dataset.cityId = city.id;
         list.innerHTML = "";
         list.style.display = "none";
       };
+
       list.appendChild(item);
     });
 
