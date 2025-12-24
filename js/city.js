@@ -44,8 +44,8 @@ const tripFields = {
 
 async function loadTripData() {
   const [cityRes, dataRes] = await Promise.all([
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.4/cities/citylists.json"),
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.4/cities/city-data.json")
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.5/cities/citylists.json"),
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.5/cities/city-data.json")
   ]);
 
   const cityJson = await cityRes.json();
@@ -72,7 +72,7 @@ function setupAutocomplete(inputId, listId) {
 
     const matches = tripCities.filter(c =>
       c.name.toLowerCase().includes(value)
-   ).slice(0, 9 );
+  ).slice(0, 7 );
 
     if (!matches.length) return;
 
@@ -149,24 +149,23 @@ function compareTrips() {
 
     const winner = nA > nB ? "A" : nB > nA ? "B" : "";
 
-    const row = document.createElement("div");
-     row.className = "trip-row";
-    const metric = document.createElement("div");
-    metric.innerHTML = `
-  ${field.label}
-<div class="variance">${varianceLabel(valA, valB)}</div>
+  const row = document.createElement("div");
+row.className = "trip-row";
+row.innerHTML = `
+  <div>
+    ${field.label}
+    <div class="variance">${varianceLabel(valA, valB)}</div>
+  </div>
+  <div class="${winner === "A" ? "winner" : ""}">
+    ${formatRange(valA, field)}
+  </div>
+  <div class="${winner === "B" ? "winner" : ""}">
+    ${formatRange(valB, field)}
+  </div>
 `;
-const colA = document.createElement("div");
-colA.className = winner === "A" ? "winner" : "";
-colA.textContent = formatRange(valA, field);
-const colB = document.createElement("div");
-colB.className = winner === "B" ? "winner" : "";
-colB.textContent = formatRange(valB, field);
-row.appendChild(metric);
-row.appendChild(colA);
-row.appendChild(colB);
 
-    cachedRows.push(row);
+
+   cachedRows.push(row);
   });
 
   const outA = total ? Math.round((scoreA / total) * 10) : 0;
