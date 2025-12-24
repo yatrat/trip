@@ -44,8 +44,8 @@ const tripFields = {
 
 async function loadTripData() {
   const [cityRes, dataRes] = await Promise.all([
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.2/cities/citylists.json"),
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.2/cities/city-data.json")
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.3/cities/citylists.json"),
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.3/cities/city-data.json")
   ]);
 
   const cityJson = await cityRes.json();
@@ -72,7 +72,7 @@ function setupAutocomplete(inputId, listId) {
 
     const matches = tripCities.filter(c =>
       c.name.toLowerCase().includes(value)
-    );
+   ).slice(0, 9 );
 
     if (!matches.length) return;
 
