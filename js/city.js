@@ -110,9 +110,9 @@ async function loadTripData() {
 
   const [cityRes, dataRes] = await Promise.all([
 
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.6/cities/citylists.json"),
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.9/cities/citylists.json"),
 
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.6/cities/city-data.json")
+    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.9/cities/city-data.json")
 
   ]);
 
@@ -297,11 +297,29 @@ function compareTrips() {
       (${inputA.value}: ${outA}/10, ${inputB.value}: ${outB}/10)
 
     </div>
-
+        <div class="legal-disclaimer">
+       <p><strong>Note:</strong> Data is for comparison only. Verify details before travel.</p>
+       </div>
   `;
 
   renderRows(results);
 
+}
+function renderRows(results) {
+  results.querySelectorAll(".trip-row, .load-more-btn").forEach(e => e.remove());
+
+  cachedRows.slice(0, visibleCount).forEach(row => results.appendChild(row));
+
+  if (visibleCount < cachedRows.length) {
+    const btn = document.createElement("button");
+    btn.className = "load-more-btn";
+    btn.textContent = "Load more";
+    btn.onclick = () => {
+      visibleCount += LOAD_STEP;
+      renderRows(results);
+    };
+    results.appendChild(btn);
+  }
 }
 
 /* ============================
@@ -321,55 +339,92 @@ function formatMonths(arr) {
 }
 
 function renderTripMeta(cityA, cityB) {
-
   const wrap = document.getElementById("tripMeta");
-
   if (!wrap) return;
 
   wrap.innerHTML = "";
-
-  const meta = document.createElement("div");
-
-  meta.className = "trip-meta-content";
-
+  
+  const cityAName = document.getElementById("tripA").value || "City A";
+  const cityBName = document.getElementById("tripB").value || "City B";
+  
+  
+  const container = document.createElement("div");
+  container.className = "city-cards-container";
+  
+  
+  const cardA = document.createElement("div");
+  cardA.className = "city-card city-card-a";
+  
+  let htmlA = '';
   tripMetaFields.forEach(key => {
-
-    if (!(key in cityA) && !(key in cityB)) return;
-
+    if (!(key in cityA)) return;
+    
     let valA = cityA[key] ?? "—";
-
-    let valB = cityB[key] ?? "—";
-
+    
     if (key === "best_months") {
-
       valA = formatMonths(valA);
-
-      valB = formatMonths(valB);
-
     }
-
+    
     if (typeof valA === "boolean") valA = valA ? "Yes" : "No";
-
-    if (typeof valB === "boolean") valB = valB ? "Yes" : "No";
-
     if (Array.isArray(valA)) valA = valA.join(", ");
-
-    if (Array.isArray(valB)) valB = valB.join(", ");
-
-    if (key === "more_info_link") {
-
-      valA = valA !== "—" ? `<a href="${valA}" target="_blank">Know more</a>` : "—";
-
-      valB = valB !== "—" ? `<a href="${valB}" target="_blank">Know more</a>` : "—";
-
+    
+    if (key === "more_info_link" && valA !== "—") {
+      valA = `<a href="${valA}" target="_blank">Know more</a>`;
     }
-
-    meta.innerHTML += `<p><strong>${key.replace(/_/g, " ")}:</strong> ${valA} | ${valB}</p>`;
-
+    
+    htmlA += `<p><strong>${key.replace(/_/g, " ")}:</strong> ${valA}</p>`;
   });
+  
+  cardA.innerHTML = `
+    <div class="city-card-header">
+      <h3>${cityAName}</h3>
+      <div class="city-tag">City A</div>
+    </div>
+    <div class="city-card-body">
+      ${htmlA}
+    </div>
+  `;
+  
+  
+  const cardB = document.createElement("div");
+  cardB.className = "city-card city-card-b";
+  
+  let htmlB = '';
+  tripMetaFields.forEach(key => {
+    if (!(key in cityB)) return;
+    
+    let valB = cityB[key] ?? "—";
+    
+    if (key === "best_months") {
+      valB = formatMonths(valB);
+    }
+    
+    if (typeof valB === "boolean") valB = valB ? "Yes" : "No";
+    if (Array.isArray(valB)) valB = valB.join(", ");
+    
+    if (key === "more_info_link" && valB !== "—") {
+      valB = `<a href="${valB}" target="_blank">Know more</a>`;
+    }
+    
+    htmlB += `<p><strong>${key.replace(/_/g, " ")}:</strong> ${valB}</p>`;
+  });
+  
+  cardB.innerHTML = `
+    <div class="city-card-header">
+      <h3>${cityBName}</h3>
+      <div class="city-tag">City B</div>
+    </div>
+    <div class="city-card-body">
+      ${htmlB}
+    </div>
+  `;
+  
 
-  wrap.appendChild(meta);
-
+  container.appendChild(cardA);
+  container.appendChild(cardB);
+  
+  
+  wrap.appendChild(container);
 }
 
 /* ============================
