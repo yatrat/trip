@@ -126,7 +126,7 @@ const tripMetaFields = [
 ============================ */
 
 async function loadTripData() {
-  const res = await fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v1.1.1/cities/city-data.json");
+  const res = await fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v1.1.0/cities/city-data.json");
   const dataJson = await res.json();
 
   tripData = dataJson.cities || {};
