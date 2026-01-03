@@ -16,6 +16,25 @@ let visibleCount = 6;
 
 const LOAD_STEP = 6;
 
+
+/* ============================
+   CANONICAL LINK & SEO SAFETY
+============================ */
+
+function canonicalPair(a, b) {
+  if (!a || !b || a === b) return null;
+  return [a.toLowerCase(), b.toLowerCase()].sort();
+}
+
+(function injectNoIndexIfParam() {
+  if (window.location.search.length > 0 && !document.querySelector('meta[name="robots"]')) {
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex, follow";
+    document.head.appendChild(meta);
+  }
+})();
+
 /* ============================
 
    FIELD CONFIG
@@ -107,20 +126,20 @@ const tripMetaFields = [
 ============================ */
 
 async function loadTripData() {
+  const res = await fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v1.1.1/cities/city-data.json");
+  const dataJson = await res.json();
 
-  const [cityRes, dataRes] = await Promise.all([
+  tripData = dataJson.cities || {};
 
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.9/cities/citylists.json"),
-
-    fetch("https://cdn.jsdelivr.net/gh/yatrat/trip@v2.9/cities/city-data.json")
-
-  ]);
-
-  tripCities = (await cityRes.json()).cities || [];
-
-  tripData = (await dataRes.json()).cities || {};
-
+  tripCities = Object.keys(tripData).map(id => ({
+    id: id,
+    name: id
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, c => c.toUpperCase())
+  }));
 }
+
+
 
 /* ============================
 
@@ -205,106 +224,108 @@ function setupAutocomplete(inputId, listId) {
 function compareTrips() {
 
   const inputA = document.getElementById("tripA");
-
   const inputB = document.getElementById("tripB");
-
   const results = document.getElementById("tripResults");
-
   const header = document.getElementById("tripHeader");
 
   const idA = inputA.dataset.id;
-
   const idB = inputB.dataset.id;
 
   if (!idA || !idB || idA === idB) {
-
     header.style.display = "none";
-
     results.innerHTML = `<div class="message error">Select two different destinations.</div>`;
-
+    document.getElementById("copyCompareLink").style.display = "none";
     return;
-
   }
 
   const cityA = tripData[idA];
-
   const cityB = tripData[idB];
+
+  if (!cityA || !cityB) {
+    results.innerHTML = `<div class="message error">Invalid destination data.</div>`;
+    document.getElementById("copyCompareLink").style.display = "none";
+    return;
+  }
+
+  const pair = canonicalPair(idA, idB);
+  if (pair) {
+    const params = new URLSearchParams({ a: pair[0], b: pair[1] });
+    history.replaceState(null, "", "?" + params.toString());
+  }
 
   renderTripMeta(cityA, cityB);
 
   header.style.display = "grid";
-
   document.getElementById("tripAName").textContent = inputA.value;
-
   document.getElementById("tripBName").textContent = inputB.value;
 
   cachedRows = [];
-
   visibleCount = 6;
-
   results.innerHTML = "";
 
   let scoreA = 0, scoreB = 0, total = 0;
 
   Object.keys(tripFields).forEach(key => {
-
     if (!(key in cityA) || !(key in cityB)) return;
 
     const field = tripFields[key];
-
     const valA = cityA[key];
-
     const valB = cityB[key];
-
     const [nA, nB] = normalizeScore(valA, valB, field.better);
 
     scoreA += nA;
-
     scoreB += nB;
-
     total++;
 
     const winner = nA > nB ? "A" : nB > nA ? "B" : "";
 
     const row = document.createElement("div");
-
     row.className = "trip-row";
-
     row.innerHTML = `
-
       <div>${field.label}<div class="variance">${varianceLabel(valA, valB)}</div></div>
-
       <div class="${winner === "A" ? "winner" : ""}">${formatRange(valA, field)}</div>
-
       <div class="${winner === "B" ? "winner" : ""}">${formatRange(valB, field)}</div>
-
     `;
-
     cachedRows.push(row);
-
   });
 
   const outA = Math.round((scoreA / total) * 10);
-
   const outB = Math.round((scoreB / total) * 10);
 
   results.innerHTML = `
-
     <div class="trip-summary">
-
       🏆 ${outA > outB ? inputA.value : inputB.value} is better for travel
-
       (${inputA.value}: ${outA}/10, ${inputB.value}: ${outB}/10)
-
     </div>
-        <div class="legal-disclaimer">
-       <p><strong>Note:</strong> Data is for comparison only. Verify details before travel.</p>
-       </div>
+    <div class="legal-disclaimer">
+      <p><strong>Note:</strong> Data is for comparison only. Verify details before travel.</p>
+    </div>
   `;
 
   renderRows(results);
-
+  document.getElementById("copyCompareLink").style.display = "inline-block";
 }
+
+/* ============================
+   COPY LINK BUTTON
+============================ */
+
+function setupCopyLinkButton() {
+  const btn = document.getElementById("copyCompareLink");
+  const status = document.getElementById("copyStatus");
+  if (!btn) return;
+
+  btn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      status.textContent = "Link copied!";
+      setTimeout(() => status.textContent = "", 2000);
+    } catch {
+      status.textContent = "Copy failed";
+    }
+  };
+}
+
 function renderRows(results) {
   results.querySelectorAll(".trip-row, .load-more-btn").forEach(e => e.remove());
 
@@ -475,13 +496,11 @@ function formatRange(value, field) {
 
 function applyCompareFromURL() {
   const params = new URLSearchParams(window.location.search);
-  const a = params.get("a");
-  const b = params.get("b");
+  const pair = canonicalPair(params.get("a"), params.get("b"));
+  if (!pair) return;
 
-  if (!a || !b) return;
-
-  const cityA = tripCities.find(c => c.id === a);
-  const cityB = tripCities.find(c => c.id === b);
+  const cityA = tripCities.find(c => c.id === pair[0]);
+  const cityB = tripCities.find(c => c.id === pair[1]);
   if (!cityA || !cityB) return;
 
   const inputA = document.getElementById("tripA");
@@ -504,5 +523,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupAutocomplete("tripA", "tripAList");
   setupAutocomplete("tripB", "tripBList");
   document.getElementById("compareTripBtn")?.addEventListener("click", compareTrips);
+   setupCopyLinkButton();
   applyCompareFromURL();
 });
